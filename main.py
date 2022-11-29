@@ -69,16 +69,19 @@ class GINConv(tfgnn.keras.layers.AnyToAnyConvolutionBase):
         # Collect inputs, suitably broadcast.
         inputs = []
         if sender_edge_input is not None:
+            # Encoder edge feature
             inputs.append(self.edge_encoder(sender_edge_input))
         if sender_node_input is not None:
             inputs.append(broadcast_from_sender_node(sender_node_input))
         if receiver_input is not None:
             inputs.append(broadcast_from_receiver(receiver_input))
-        # Combine inputs.
+        # sum(edge, node)
         combined_input = ops.combine_values(inputs, self._combine_type)
 
-        # Compute the result.
+        # relu(sum(edge, node))
         messages = self._message_fn(combined_input)
+        
+        # sum(Hu_k) aggregate neighbour nodes based on sum 
         pooled_messages = pool_to_receiver(messages, reduce_type=self._reduce_type)
 
         return pooled_messages
@@ -99,7 +102,8 @@ class GINNodeUpdate(tf.keras.layers.Layer):
     def call(self, inputs: Tuple[
         const.FieldOrFields, const.FieldsNest, const.FieldsNest]):
         node, edge, _ = inputs
-
+        
+        # Hv_k = MLP((1+epsilon) * Hv_k-1 + sum(Hu_k))
         h = self.mlp((1 + self.eps) * node + edge['edge'])
 
         h = self.bn(h)
