@@ -37,7 +37,6 @@ class GINConv(tfgnn.keras.layers.AnyToAnyConvolutionBase):
             sender_node_feature: Optional[
                 const.FieldName] = const.HIDDEN_STATE,
             sender_edge_feature: Optional[const.FieldName] = None,
-            debug=False,
             **kwargs):
         super().__init__(
             receiver_tag=receiver_tag,
@@ -86,7 +85,7 @@ class GINConv(tfgnn.keras.layers.AnyToAnyConvolutionBase):
 
 
 class GINNodeUpdate(tf.keras.layers.Layer):
-    def __init__(self, node_dim, debug=False):
+    def __init__(self, node_dim):
         super(GINNodeUpdate, self).__init__()
 
         self.mlp = MLP(node_dim=node_dim)
@@ -126,11 +125,10 @@ class MLP(tf.keras.layers.Layer):
 
 class GIN(tf.keras.Model):
 
-    def __init__(self, node_dim, debug=False):
+    def __init__(self, node_dim):
         super(GIN, self).__init__()
         self.node_dim = node_dim
         self.relu = tf.keras.layers.Activation('relu')
-        self.debug = debug
 
         self.model = tfgnn.keras.layers.GraphUpdate(
             node_sets={
@@ -143,10 +141,9 @@ class GIN(tf.keras.Model):
                         reduce_type="sum",
                         combine_type='sum',
                         receiver_tag=tfgnn.TARGET,
-                        debug=self.debug,
                     )},
 
-                    next_state=GINNodeUpdate(node_dim=self.node_dim, debug=self.debug),
+                    next_state=GINNodeUpdate(node_dim=self.node_dim),
                 )
             }
         )
