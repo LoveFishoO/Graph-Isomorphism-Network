@@ -89,9 +89,13 @@ class GINNodeUpdate(tf.keras.layers.Layer):
     def __init__(self, node_dim, debug=False):
         super(GINNodeUpdate, self).__init__()
 
-        self.eps = tf.Variable(tf.zeros(1))
         self.mlp = MLP(node_dim=node_dim)
         self.bn = tf.keras.layers.BatchNormalization()
+    
+    def build(self,input_shape):
+        self.eps = self.add_weight(shape=(1,),
+                                     initializer=tf.keras.initializers.RandomNormal(),
+                                     trainable=True)
 
     def call(self, inputs: Tuple[
         const.FieldOrFields, const.FieldsNest, const.FieldsNest]):
